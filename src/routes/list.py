@@ -1,11 +1,9 @@
 
-from flask import render_template, request, redirect, jsonify, abort, url_for
+from flask import render_template, request, redirect, url_for
 from src.models import Artist, Venue
 from src.extensions import db
 from json import loads
-import random
-import json
-
+from src.forms import ArtistForm, VenueForm, ShowForm
 
 def setup(app):
     

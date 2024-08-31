@@ -8,6 +8,8 @@ from src.filters import init_filters
 def create_app():
     app = Flask("fyyur")
 
+    #todo - use "from config"
+
     app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
     app.config['EXPLAIN_TEMPLATE_LOADING'] = DEBUG
     app.debug = DEBUG
@@ -16,7 +18,7 @@ def create_app():
     
     db.init_app(app)
 
-    migrate = Migrate(app, db)
+    Migrate(app, db)
 
     init_routes(app)
     init_filters(app)
