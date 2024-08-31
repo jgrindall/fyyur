@@ -8,12 +8,7 @@ import json
 
 
 def setup(app):
-        
-    @app.route('/')
-    def index():
-        return render_template('pages/home.html')
-
-
+    
     #  Venues
     #  ----------------------------------------------------------------
 
