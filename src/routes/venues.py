@@ -15,12 +15,12 @@ def setup(app):
     def venues():
 
         query = db.text("""
-            select v.id, v.name, v.state, v.city, count(*)  as num_upcoming_shows
-            from "Venue" v 
-            join "Show" s
-            on v.id=s.venue_id
-            WHERE s.start_time > NOW()
-            group by v.id
+            SELECT v.id, v.name, v.state, v.city, count(s.id) as num_upcoming_shows
+            FROM "Venue" v 
+            LEFT OUTER JOIN "Show" s
+            ON v.id = s.venue_id
+            AND s.start_time > NOW()
+            GROUP BY v.id
         """)
 
 
@@ -30,6 +30,7 @@ def setup(app):
         areas = {}
 
         for row in rows:
+
             key = row.city + ":" + row.state
             venue = {
                 "id": row.id,
@@ -65,13 +66,13 @@ def setup(app):
         else:
 
             query = db.text("""
-                select v.id, v.name, v.state, v.city, count(*)  as num_upcoming_shows
-                from "Venue" v 
-                join "Show" s
-                on v.id=s.venue_id
-                WHERE s.start_time > NOW()
-                AND a.name ILIKE :search_term
-                GROUP BY a.id, a.name
+                SELECT v.id, v.name, v.state, v.city, count(s.id) as num_upcoming_shows
+                FROM "Venue" v 
+                LEFT OUTER join "Show" s
+                ON v.id=s.venue_id
+                AND s.start_time > NOW()
+                WHERE v.name ILIKE :search_term
+                GROUP BY v.id
             """)
 
             result = db.session.execute(query, {'search_term': '%' + search_term + '%'})
@@ -95,13 +96,13 @@ def setup(app):
     def show_venue(venue_id):
 
         query = db.text("""
-            select v.*, s.artist_id, s.start_time, a.name as artist_name, a.image_link as artist_image_link
-            from "Venue" v 
-            join "Show" s
-            on v.id = s.venue_id
-            join "Artist" a
-            on a.id=s.artist_id
-            where v.id = :venue_id
+            SELECT v.*, s.artist_id, s.start_time, a.name as artist_name, a.image_link as artist_image_link
+            FROM "Venue" v 
+            LEFT OUTER JOIN "Show" s
+            ON v.id = s.venue_id
+            LEFT OUTER JOIN "Artist" a
+            ON a.id=s.artist_id
+            WHERE v.id = :venue_id
         """)
 
         result = db.session.execute(query, {'venue_id': venue_id})
@@ -113,17 +114,7 @@ def setup(app):
             row0 = rows[0]
 
             venue = {
-                "id": row0.id,
-                "name": row0.name,
-                "city": row0.city,
-                "state": row0.state,
-                "address": row0.address,
-                "phone": row0.phone,
-                "image_link": row0.image_link,
-                "facebook_link": row0.facebook_link,
-                "website": row0.website,
-                "seeking_talent": row0.seeking_talent,
-                "seeking_description": row0.seeking_description,
+                **(row0._asdict()),
                 "genres": (json.loads(row0.genres) if row0.genres else []),
                 "upcoming_shows": [],
                 "past_shows": [],
@@ -132,18 +123,19 @@ def setup(app):
             }
 
             for row in rows:
-                show = {
-                    "artist_id": row.artist_id,
-                    "artist_name": row.artist_name,
-                    "artist_image_link": row.artist_image_link,
-                    "start_time": Show.time_to_string(row.start_time)
-                }
-                if(row.start_time > datetime.now()):
-                    venue['upcoming_shows'].append(show)
-                    venue['upcoming_shows_count'] += 1
-                else:
-                    venue['past_shows'].append(show)
-                    venue['past_shows_count'] += 1
+                if(row.artist_id != None):
+                    show = {
+                        "artist_id": row.artist_id,
+                        "artist_name": row.artist_name,
+                        "artist_image_link": row.artist_image_link,
+                        "start_time": Show.time_to_string(row.start_time)
+                    }
+                    if(row.start_time > datetime.now()):
+                        venue['upcoming_shows'].append(show)
+                        venue['upcoming_shows_count'] += 1
+                    else:
+                        venue['past_shows'].append(show)
+                        venue['past_shows_count'] += 1
 
         return render_template('pages/show_venue.html', venue=venue)
 
@@ -203,8 +195,8 @@ def setup(app):
     def edit_venue(venue_id):
         venue = Venue.query.get(venue_id)
         venue_json = venue.to_dict()
-        form = VenueForm(obj=venue_json)
-        return render_template('forms/edit_venue.html', form=form, venue=venue)
+        form = VenueForm(obj=venue)
+        return render_template('forms/edit_venue.html', form=form, venue=venue_json)
 
 
 

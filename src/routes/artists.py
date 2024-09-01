@@ -35,7 +35,7 @@ def setup(app):
             query = db.text("""
                 SELECT a.id, a.name, COUNT(*) as num_upcoming_shows
                 FROM "Artist" a
-                JOIN "Show" s ON a.id = s.artist_id
+                LEFT OUTER JOIN "Show" s ON a.id = s.artist_id
                 WHERE s.start_time > NOW()
                 AND a.name ILIKE :search_term
                 GROUP BY a.id, a.name
@@ -46,8 +46,7 @@ def setup(app):
 
             def to_dict(row):
                 return {
-                    "id": row.id,
-                    "name": row.name,
+                    **(row._asdict()),
                     "num_upcoming_shows": row.num_upcoming_shows
                 }
 
@@ -65,16 +64,18 @@ def setup(app):
     def show_artist(artist_id):
 
         query = db.text("""
-            select a.*, s.venue_id, s.start_time, v.name as venue_name, v.image_link as venue_image_link
-            from "Venue" v 
-            join "Show" s
-            on v.id = s.venue_id
-            join "Artist" a
-            on a.id = s.artist_id
-            where a.id = :artist_id
+            SELECT a.*, s.venue_id, s.start_time, v.name as venue_name, v.image_link as venue_image_link
+            FROM "Artist" a
+            LEFT OUTER JOIN "Show" s
+            ON a.id = s.artist_id
+            LEFT OUTER JOIN "Venue" v
+            ON v.id = s.venue_id
+            WHERE a.id = :artist_id
         """)
 
-        result = db.session.execute(query, {'artist_id': artist_id})
+        print("run", query, flush=True)
+
+        result = db.session.execute(query, {'artist_id': int(artist_id)})
         rows = result.fetchall()
 
         if len(rows) == 0:
@@ -83,16 +84,7 @@ def setup(app):
             row0 = rows[0]
 
             artist = {
-                "id": row0.id,
-                "name": row0.name,
-                "city": row0.city,
-                "state": row0.state,
-                "phone": row0.phone,
-                "image_link": row0.image_link,
-                "facebook_link": row0.facebook_link,
-                "website": row0.website,
-                "seeking_venue": row0.seeking_venue,
-                "seeking_description": row0.seeking_description,
+                **(row0._asdict()),
                 "genres": (json.loads(row0.genres) if row0.genres else []),
                 "upcoming_shows": [],
                 "past_shows": [],
@@ -101,18 +93,19 @@ def setup(app):
             }
 
             for row in rows:
-                show = {
-                    "venue_id": row.venue_id,
-                    "venue_name": row.venue_name,
-                    "venue_image_link": row.venue_image_link,
-                    "start_time": Show.time_to_string(row.start_time)
-                }
-                if(row.start_time > datetime.now()):
-                    artist['upcoming_shows'].append(show)
-                    artist['upcoming_shows_count'] += 1
-                else:
-                    artist['past_shows'].append(show)
-                    artist['past_shows_count'] += 1
+                if(row.venue_id != None):
+                    show = {
+                        "venue_id": row.venue_id,
+                        "venue_name": row.venue_name,
+                        "venue_image_link": row.venue_image_link,
+                        "start_time": row.start_time
+                    }
+                    if(row.start_time > datetime.now()):
+                        artist['upcoming_shows'].append(show)
+                        artist['upcoming_shows_count'] += 1
+                    else:
+                        artist['past_shows'].append(show)
+                        artist['past_shows_count'] += 1
 
         return render_template('pages/show_artist.html', artist=artist)
 
@@ -165,6 +158,7 @@ def setup(app):
 
         artist_id = None
         artist_name = None
+        error = False
 
         try:
             artist = Artist.create_using_form_data(request.form)
