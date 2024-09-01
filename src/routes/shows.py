@@ -44,13 +44,16 @@ def setup(app):
     def create_show_submission():
         try:
             show = Show.create_using_form_data(request.form)
+            print("add show", show, flush=True)
             db.session.add(show)
             db.session.commit()
             flash('Show was successfully listed!')
+            
         except Exception as e:
             db.session.rollback()
-            print(e)
+            print(e, flush=True)
             flash('An error occurred. Show could not be listed.')
-            return render_template('pages/home.html')
+            
         finally:
             db.session.close()
+            return render_template('pages/home.html')
