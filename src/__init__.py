@@ -4,6 +4,10 @@ from src.extensions import db
 from src.config import DEBUG, SQLALCHEMY_DATABASE_URI
 from src.routes import init_routes
 from src.filters import init_filters
+import sys
+
+if sys.version_info[0:2] != (3, 12):
+    raise Exception('Requires python 3.12')
 
 def create_app():
     app = Flask("fyyur")

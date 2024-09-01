@@ -15,5 +15,5 @@ def setup(app):
         return type(value).__name__
 
     @app.template_filter('datetime')
-    def datetime_filter(value):
-        return format_datetime(value)
+    def datetime_filter(value, format):
+        return format_datetime(value, format)
