@@ -1,4 +1,9 @@
 
+
+"""
+Artists controller
+"""
+
 from flask import render_template, request, redirect, url_for
 from src.models import Artist, Venue
 from src.extensions import db
@@ -8,10 +13,10 @@ from src.routes.data.artists import artists, search, data1, data2, data3, artist
 
 def setup(app):
 
-    #  Artists
-    #  ----------------------------------------------------------------
     @app.route('/artists')
     def artists():
+        artists = Artist.query.all()
+        
         return render_template('pages/artists.html', artists=artists)
 
     @app.route('/artists/search', methods=['POST'])
@@ -28,6 +33,8 @@ def setup(app):
         data = list(filter(lambda d: d['id'] == artist_id, [data1, data2, data3]))[0]
         return render_template('pages/show_artist.html', artist=data)
 
+    
+    
     #  Update
     #  ----------------------------------------------------------------
     @app.route('/artists/<int:artist_id>/edit', methods=['GET'])

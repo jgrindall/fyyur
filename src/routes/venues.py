@@ -4,7 +4,7 @@ from src.models import Artist, Venue
 from src.extensions import db
 from json import loads
 from src.forms import ArtistForm, VenueForm, ShowForm
-from src.routes.data.venues import venues
+from src.routes.data.venues import venues as _venues
 from src.routes.data.venue import data1, data2, data3, venue0, search
 def setup(app):
     
@@ -15,7 +15,7 @@ def setup(app):
     def venues():
         # TODO: replace with real venues data.
         #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-        return render_template('pages/venues.html', areas=venues);
+        return render_template('pages/venues.html', areas=_venues);
 
     @app.route('/venues/search', methods=['POST'])
     def search_venues():

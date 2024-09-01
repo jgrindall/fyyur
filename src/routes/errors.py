@@ -1,4 +1,8 @@
 
+"""
+Error controller
+"""
+
 from flask import render_template
 
 def setup(app):

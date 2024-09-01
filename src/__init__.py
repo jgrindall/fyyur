@@ -4,6 +4,7 @@ from src.extensions import db
 from src.config import DEBUG, SQLALCHEMY_DATABASE_URI
 from src.routes import init_routes
 from src.filters import init_filters
+from src.populate import populate_db
 import sys
 
 if sys.version_info[0:2] != (3, 12):
@@ -21,11 +22,13 @@ def create_app():
     app.app_context().push()
     
     db.init_app(app)
-
     Migrate(app, db)
 
     init_routes(app)
     init_filters(app)
+
+    with app.app_context():
+        populate_db()
 
     return app
 

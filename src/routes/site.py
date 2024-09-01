@@ -1,3 +1,6 @@
+"""
+Site controller
+"""
 
 from flask import render_template
 

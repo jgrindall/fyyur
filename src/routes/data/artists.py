@@ -27,7 +27,9 @@ search = {
 artist0 = {
     "id": 4,
     "name": "Guns N Petals",
-    "genres": ["Rock n Roll"],
+    "genres": [
+        "Rock n Roll"
+    ],
     "city": "San Francisco",
     "state": "CA",
     "phone": "326-123-5000",
@@ -41,7 +43,9 @@ artist0 = {
 data1 = {
     "id": 4,
     "name": "Guns N Petals",
-    "genres": ["Rock n Roll"],
+    "genres": [
+        "Rock n Roll"
+    ],
     "city": "San Francisco",
     "state": "CA",
     "phone": "326-123-5000",
@@ -65,7 +69,9 @@ data1 = {
 data2 = {
     "id": 5,
     "name": "Matt Quevedo",
-    "genres": ["Jazz"],
+    "genres": [
+        "Jazz"
+    ],
     "city": "New York",
     "state": "NY",
     "phone": "300-400-5000",
@@ -87,7 +93,10 @@ data2 = {
 data3 = {
     "id": 6,
     "name": "The Wild Sax Band",
-    "genres": ["Jazz", "Classical"],
+    "genres": [
+        "Jazz", 
+        "Classical"
+    ],
     "city": "San Francisco",
     "state": "CA",
     "phone": "432-325-5432",
