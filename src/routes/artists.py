@@ -7,6 +7,9 @@ from src.models import Artist, Venue, Show
 from sqlalchemy import text
 from src.extensions import db
 from src.forms import ArtistForm
+import json
+from datetime import datetime
+
 
 def setup(app):
 
@@ -60,9 +63,58 @@ def setup(app):
     
     @app.route('/artists/<int:artist_id>')
     def show_artist(artist_id):
-        artist = Artist.query.get(artist_id)
-        artist_json = artist.to_dict()
-        return render_template('pages/show_artist.html', artist=artist_json)
+
+        query = db.text("""
+            select a.*, s.venue_id, s.start_time, v.name as venue_name, v.image_link as venue_image_link
+            from "Venue" v 
+            join "Show" s
+            on v.id = s.venue_id
+            join "Artist" a
+            on a.id = s.artist_id
+            where a.id = :artist_id
+        """)
+
+        result = db.session.execute(query, {'artist_id': artist_id})
+        rows = result.fetchall()
+
+        if len(rows) == 0:
+            abort(404)
+        else:
+            row0 = rows[0]
+
+            artist = {
+                "id": row0.id,
+                "name": row0.name,
+                "city": row0.city,
+                "state": row0.state,
+                "phone": row0.phone,
+                "image_link": row0.image_link,
+                "facebook_link": row0.facebook_link,
+                "website": row0.website,
+                "seeking_venue": row0.seeking_venue,
+                "seeking_description": row0.seeking_description,
+                "genres": (json.loads(row0.genres) if row0.genres else []),
+                "upcoming_shows": [],
+                "past_shows": [],
+                "upcoming_shows_count": 0,
+                "past_shows_count": 0
+            }
+
+            for row in rows:
+                show = {
+                    "venue_id": row.venue_id,
+                    "venue_name": row.venue_name,
+                    "venue_image_link": row.venue_image_link,
+                    "start_time": Show.time_to_string(row.start_time)
+                }
+                if(row.start_time > datetime.now()):
+                    artist['upcoming_shows'].append(show)
+                    artist['upcoming_shows_count'] += 1
+                else:
+                    artist['past_shows'].append(show)
+                    artist['past_shows_count'] += 1
+
+        return render_template('pages/show_artist.html', artist=artist)
 
     
     

@@ -1,8 +1,10 @@
 
 from flask import render_template, request, flash, redirect, url_for, abort
-from src.models import Venue
+from src.models import Venue, Show
 from src.extensions import db
 from src.forms import VenueForm
+import json
+from datetime import datetime
 
 def setup(app):
     
@@ -91,9 +93,59 @@ def setup(app):
 
     @app.route('/venues/<int:venue_id>')
     def show_venue(venue_id):
-        venue = Venue.query.get(venue_id)
-        venue_json = venue.to_dict()
-        return render_template('pages/show_venue.html', venue=venue_json)
+
+        query = db.text("""
+            select v.*, s.artist_id, s.start_time, a.name as artist_name, a.image_link as artist_image_link
+            from "Venue" v 
+            join "Show" s
+            on v.id = s.venue_id
+            join "Artist" a
+            on a.id=s.artist_id
+            where v.id = :venue_id
+        """)
+
+        result = db.session.execute(query, {'venue_id': venue_id})
+        rows = result.fetchall()
+
+        if len(rows) == 0:
+            abort(404)
+        else:
+            row0 = rows[0]
+
+            venue = {
+                "id": row0.id,
+                "name": row0.name,
+                "city": row0.city,
+                "state": row0.state,
+                "address": row0.address,
+                "phone": row0.phone,
+                "image_link": row0.image_link,
+                "facebook_link": row0.facebook_link,
+                "website": row0.website,
+                "seeking_talent": row0.seeking_talent,
+                "seeking_description": row0.seeking_description,
+                "genres": (json.loads(row0.genres) if row0.genres else []),
+                "upcoming_shows": [],
+                "past_shows": [],
+                "upcoming_shows_count": 0,
+                "past_shows_count": 0
+            }
+
+            for row in rows:
+                show = {
+                    "artist_id": row.artist_id,
+                    "artist_name": row.artist_name,
+                    "artist_image_link": row.artist_image_link,
+                    "start_time": Show.time_to_string(row.start_time)
+                }
+                if(row.start_time > datetime.now()):
+                    venue['upcoming_shows'].append(show)
+                    venue['upcoming_shows_count'] += 1
+                else:
+                    venue['past_shows'].append(show)
+                    venue['past_shows_count'] += 1
+
+        return render_template('pages/show_venue.html', venue=venue)
 
     
 
