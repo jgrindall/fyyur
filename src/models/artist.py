@@ -24,7 +24,6 @@ class Artist(db.Model):
             "state": self.state,
             "phone": self.phone,
 
-            # nullable
             "image_link": self.image_link or "",
             "facebook_link": self.facebook_link or "",
             "seeking_venue": self.seeking_venue or False,
@@ -34,3 +33,33 @@ class Artist(db.Model):
             # json
             "genres": json.loads(self.genres) if self.genres else []
         }
+    
+    @staticmethod
+    def edit_using_form_data(artist, form):
+        artist.name = form.get('name', artist.name)
+        artist.city = form.get('city', artist.city)
+        artist.state = form.get('state', artist.state)
+        artist.phone = form.get('phone', artist.phone)
+        artist.image_link = form.get('image_link', artist.image_link)
+        artist.facebook_link = form.get('facebook_link', artist.facebook_link)
+        artist.website = form.get('website', artist.website) 
+        artist.seeking_venue = form.get('seeking_venue', artist.seeking_venue)
+        artist.seeking_description = form.get('seeking_description', artist.seeking_description)
+        artist.genres = json.dumps(form.get('genres', artist.genres))
+
+
+    @staticmethod
+    def create_using_form_data(form):
+        artist = Artist(
+            name = form['name'],
+            city = form['city'],
+            state = form['state'],
+            phone = form['phone'],
+            genres = json.dumps(form.getlist('genres')),
+            image_link = form.get('image_link', ''),
+            facebook_link = form.get('facebook_link', ''),
+            seeking_venue = form.get('seeking_venue', False),
+            seeking_description = form.get('seeking_description', ''),
+            website = form.get('website', '')
+        )
+        return artist

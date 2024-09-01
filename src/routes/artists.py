@@ -1,15 +1,11 @@
-
-
 """
 Artists controller
 """
 
-from flask import render_template, flash, request, redirect, url_for
-from src.models import Artist, Venue
+from flask import render_template, flash, request, redirect, url_for,abort
+from src.models import Artist
 from src.extensions import db
-from json import loads
-from src.forms import ArtistForm, VenueForm, ShowForm
-from src.routes.data.artists import artists, search, data1, data2, data3, artist0
+from src.forms import ArtistForm
 
 def setup(app):
 
@@ -19,21 +15,28 @@ def setup(app):
         return render_template('pages/artists.html', artists=artists)
 
     
+
+
     
     @app.route('/artists/search', methods=['POST'])
     def search_artists():
         search_term = request.form.get('search_term', '').strip()
         if(search_term == ""):
-            return render_template('pages/search_artists.html', results=[], search_term=request.form.get('search_term', ''))
+            results = {
+                "count": 0,
+                "data": []
+            }
         else:
             artists = Artist.query.filter(Artist.name.ilike(f'%{search_term}%')).all()
             results = {
                 "count": len(artists),
                 "data": [artist.to_dict() for artist in artists]
             }
-            return render_template('pages/search_artists.html', results=results, search_term=request.form.get('search_term', ''))
+            return render_template('pages/search_artists.html', results=results, search_term=search_term)
 
     
+
+
     
     @app.route('/artists/<int:artist_id>')
     def show_artist(artist_id):
@@ -52,19 +55,30 @@ def setup(app):
         form = ArtistForm(obj=artist)
         return render_template('forms/edit_artist.html', form=form, artist=artist_json)
 
-    @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
-    def edit_artist_submission(artist_id):
-
-        print("UPDATE")
-        print(request.form)
-        
-        #request.form['seeking_venue'] = True if request.form.get('seeking_venue') == 'y' else False
-
-        # TODO: take values from the form submitted, and update existing
-        # artist record with ID <artist_id> using the new attributes
-        return redirect(url_for('show_artist', artist_id=artist_id))
-
     
+    
+    @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
+    def edit_artist_submission(artist_id):        
+        try:
+            artist = Artist.query.get(artist_id)
+            if artist:
+                Artist.edit_using_form_data(artist, request.form)
+                db.session.commit()
+            else:
+                abort(400)
+        except:
+            error = True
+            db.session.rollback()
+
+        finally:
+            db.session.close()           
+            if  error == True:
+                abort(400)
+            else:            
+                return redirect(url_for('show_artist', artist_id=artist_id))
+
+
+
 
     #  Create Artist
     #  ----------------------------------------------------------------
@@ -76,15 +90,26 @@ def setup(app):
 
     @app.route('/artists/create', methods=['POST'])
     def create_artist_submission():
-        # called upon submitting the new artist listing form
-        # TODO: insert form data as a new Venue record in the db, instead
-        # TODO: modify data to be the data object returned from db insertion
 
-        # on successful db insert, flash success
-        flash('Artist ' + request.form['name'] + ' was successfully listed!')
-        # TODO: on unsuccessful db insert, flash an error instead.
-        # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
-        return render_template('pages/home.html')
+        artist_id = None
+        artist_name = None
 
+        try:
+            artist = Artist.create_using_form_data(request.form)
+            db.session.add(artist)
+            db.session.commit()
+            artist_id = artist.id
+            artist_name = artist.name
+            
+        except Exception as e:
+            print(e)
+            error = True
+            db.session.rollback()
 
-  
+        finally:
+            db.session.close()           
+            if  error == True:
+                abort(400)
+            else:            
+                flash('Artist ' + artist_name + ' was successfully listed!')
+                return redirect(url_for('show_artist', artist_id=artist_id))

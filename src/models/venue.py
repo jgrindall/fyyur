@@ -37,5 +37,34 @@ class Venue(db.Model):
             # json
             "genres": json.loads(self.genres) if self.genres else []
         }
-
     
+    @staticmethod
+    def edit_using_form_data(venue, form):
+        venue.name = form.get('name', venue.name)
+        venue.city = form.get('city', venue.city)
+        venue.state = form.get('state', venue.state)
+        venue.address = form.get('address', venue.address)
+        venue.phone = form.get('phone', venue.phone)
+        venue.image_link = form.get('image_link', venue.image_link)
+        venue.facebook_link = form.get('facebook_link', venue.facebook_link)
+        venue.seeking_talent = form.get('seeking_talent', venue.seeking_talent)
+        venue.seeking_description = form.get('seeking_description', venue.seeking_description)
+        venue.website = form.get('website', venue.website)
+        venue.genres = json.dumps(form.get('genres', venue.genres))
+    
+    @staticmethod
+    def create_using_form_data(form):
+        venue = Venue(
+            name = form['name'],
+            genres = json.dumps(form.getlist('genres')),
+            address = form['address'],
+            city = form['city'],
+            state = form['state'],
+            phone = form['phone'],
+            facebook_link = form.get('facebook_link', ''),
+            image_link = form.get('image_link', ''),
+            seeking_talent = form.get('seeking_talent', False),
+            seeking_description = form.get('seeking_description', ''),
+            website = form.get('website', '')
+        )
+        return venue
