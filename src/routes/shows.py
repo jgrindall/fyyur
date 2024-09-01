@@ -4,7 +4,7 @@ Shows controller
 
 
 
-from flask import render_template, request, redirect, url_for
+from flask import render_template, request, flash, redirect, url_for
 from src.models import Artist, Venue, Show
 from src.extensions import db
 from json import loads
@@ -18,24 +18,46 @@ def setup(app):
 
     @app.route('/shows')
     def shows():
-        # displays list of shows at /shows
-        # TODO: replace with real venues data.
+        shows = Show.query.all()
+
+        def show_to_dict(show):
+            return {
+                "venue_id": show.venue_id,
+                "venue_name": show.venue.name,
+                "artist_id": show.artist.id,
+                "artist_name": show.artist.name,
+                "artist_image_link": show.artist.image_link,
+                "start_time": Show.time_to_string(show.start_time)
+            }
+
+        _shows = [show_to_dict(show) for show in shows]
+
         return render_template('pages/shows.html', shows = _shows)
 
     @app.route('/shows/create')
     def create_shows():
-        # renders form. do not touch.
         form = ShowForm()
         return render_template('forms/new_show.html', form=form)
 
     @app.route('/shows/create', methods=['POST'])
     def create_show_submission():
-        # called to create new shows in the db, upon submitting new show listing form
-        # TODO: insert form data as a new Show record in the db, instead
+        venue_id = int(request.form.get('venue_id'))
+        artist_id = int(request.form.get('artist_id'))
+        start_time = request.form.get('start_time')
 
-        # on successful db insert, flash success
-        flash('Show was successfully listed!')
-        # TODO: on unsuccessful db insert, flash an error instead.
-        # e.g., flash('An error occurred. Show could not be listed.')
-        # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-        return render_template('pages/home.html')
+        try:
+            show = Show(
+                venue_id = venue_id,
+                artist_id = artist_id,
+                start_time = Show.string_to_time(start_time)
+            )
+            db.session.add(show)
+            db.session.commit()
+            flash('Show was successfully listed!')
+        except Exception as e:
+            db.session.rollback()
+            print(e)
+            flash('An error occurred. Show could not be listed.')
+            return render_template('pages/home.html')
+        finally:
+            db.session.close()

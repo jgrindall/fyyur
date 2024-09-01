@@ -155,7 +155,7 @@ def _make_show(data):
     return Show(
         venue_id = venue.id,
         artist_id = artist.id,
-        start_time = datetime.strptime(data['start_time'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        start_time = Show.string_to_time(data['start_time'])
     )    
 
 

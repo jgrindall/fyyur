@@ -1,5 +1,7 @@
 from ..extensions import db
 
+datetime_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+
 class Show(db.Model):
     __tablename__ = 'Show'
 
@@ -10,3 +12,12 @@ class Show(db.Model):
 
     artist = db.relationship('Artist', backref = db.backref('shows', cascade="all, delete-orphan", lazy=True))
     venue = db.relationship('Venue', backref = db.backref('shows', cascade="all, delete-orphan", lazy=True))
+
+
+    @staticmethod
+    def time_to_string(time):
+        return time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    
+    @staticmethod
+    def string_to_time(s):
+        return datetime.strptime(s, '%Y-%m-%dT%H:%M:%S.%fZ')

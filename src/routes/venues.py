@@ -1,5 +1,5 @@
 
-from flask import render_template, request, redirect, url_for
+from flask import render_template, request, flash, redirect, url_for
 from src.models import Artist, Venue
 from src.extensions import db
 from json import loads
@@ -13,8 +13,10 @@ def setup(app):
 
     @app.route('/venues')
     def venues():
+        _venues = Venue.query.all()
+
         # TODO: replace with real venues data.
-        #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
+        # num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
         return render_template('pages/venues.html', areas=_venues);
 
     @app.route('/venues/search', methods=['POST'])
