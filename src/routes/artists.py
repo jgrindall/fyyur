@@ -3,7 +3,8 @@ Artists controller
 """
 
 from flask import render_template, flash, request, redirect, url_for,abort
-from src.models import Artist
+from src.models import Artist, Venue, Show
+from sqlalchemy import text
 from src.extensions import db
 from src.forms import ArtistForm
 
@@ -27,10 +28,29 @@ def setup(app):
                 "data": []
             }
         else:
-            artists = Artist.query.filter(Artist.name.ilike(f'%{search_term}%')).all()
+
+            query = db.text("""
+                SELECT a.id, a.name, COUNT(*) as num_upcoming_shows
+                FROM "Artist" a
+                JOIN "Show" s ON a.id = s.artist_id
+                WHERE s.start_time > NOW()
+                AND a.name ILIKE :search_term
+                GROUP BY a.id, a.name
+            """)
+
+            result = db.session.execute(query, {'search_term': '%' + search_term + '%'})
+            rows = result.fetchall()
+
+            def to_dict(row):
+                return {
+                    "id": row.id,
+                    "name": row.name,
+                    "num_upcoming_shows": row.num_upcoming_shows
+                }
+
             results = {
-                "count": len(artists),
-                "data": [artist.to_dict() for artist in artists]
+                "count": len(rows),
+                "data": [to_dict(row) for row in rows]
             }
             return render_template('pages/search_artists.html', results=results, search_term=search_term)
 

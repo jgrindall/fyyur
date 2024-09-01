@@ -11,11 +11,42 @@ def setup(app):
 
     @app.route('/venues')
     def venues():
-        _venues = Venue.query.all()
 
-        # TODO: replace with real venues data.
-        # num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-        return render_template('pages/venues.html', areas=_venues);
+        query = db.text("""
+            select v.id, v.name, v.state, v.city, count(*)  as num_upcoming_shows
+            from "Venue" v 
+            join "Show" s
+            on v.id=s.venue_id
+            WHERE s.start_time > NOW()
+            group by v.id
+        """)
+
+
+        result = db.session.execute(query)
+        rows = result.fetchall()
+
+        areas = {}
+
+        for row in rows:
+            key = row.city + ":" + row.state
+            venue = {
+                "id": row.id,
+                "name": row.name,
+                "num_upcoming_shows": row.num_upcoming_shows
+            }
+
+            if key in areas:
+                areas[key]['venues'].append(venue)
+            else:
+                areas[key] = {
+                    "city": row.city,
+                    "state": row.state,
+                    "venues": [
+                        venue
+                    ]
+                }
+
+        return render_template('pages/venues.html', areas=areas.values())
 
     
 
@@ -30,17 +61,33 @@ def setup(app):
                 "data": []
             }
         else:
-            venues = Venue.query.filter(Venue.name.ilike(f'%{search_term}%')).all()
+
+            query = db.text("""
+                select v.id, v.name, v.state, v.city, count(*)  as num_upcoming_shows
+                from "Venue" v 
+                join "Show" s
+                on v.id=s.venue_id
+                WHERE s.start_time > NOW()
+                AND a.name ILIKE :search_term
+                GROUP BY a.id, a.name
+            """)
+
+            result = db.session.execute(query, {'search_term': '%' + search_term + '%'})
+            rows = result.fetchall()
+
+            def to_dict(row):
+                return {
+                    "id": row.id,
+                    "name": row.name,
+                    "num_upcoming_shows": row.num_upcoming_shows
+                }
+
             results = {
-                "count": len(venues),
-                "data": [venue.to_dict() for venue in venues]
+                "count": len(rows),
+                "data": [to_dict(row) for row in rows]
             }
             return render_template('pages/search_venues.html', results=results, search_term=search_term)
-        
-
-
-
-
+    
 
     @app.route('/venues/<int:venue_id>')
     def show_venue(venue_id):
