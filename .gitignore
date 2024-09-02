@@ -7,3 +7,5 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 error.log
+.env
+
