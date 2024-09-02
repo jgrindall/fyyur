@@ -24,6 +24,7 @@ class Show(db.Model):
         show = Show(
             venue_id = venue_id,
             artist_id = artist_id,
+            # the client uses a different time format
             start_time = datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S')
         )
         return show
