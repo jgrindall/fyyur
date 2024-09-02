@@ -17,3 +17,8 @@ def setup(app):
     @app.template_filter('datetime')
     def datetime_filter(value, format):
         return format_datetime(value, format)
+
+
+    @app.context_processor
+    def inject_stage_and_region():
+        return dict(placeholder="https://upload.wikimedia.org/wikipedia/commons/f/fe/BW47-rg12.png")

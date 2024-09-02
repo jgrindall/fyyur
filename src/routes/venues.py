@@ -69,7 +69,7 @@ def setup(app):
                 SELECT v.id, v.name, v.state, v.city, count(s.id) as num_upcoming_shows
                 FROM "Venue" v 
                 LEFT OUTER join "Show" s
-                ON v.id=s.venue_id
+                ON v.id = s.venue_id
                 AND s.start_time > NOW()
                 WHERE v.name ILIKE :search_term
                 GROUP BY v.id
@@ -170,7 +170,8 @@ def setup(app):
         finally:
             db.session.close()           
             if  error == True:
-                abort(400)
+                flash('Failed to create venue')
+                abort(500)
             else:            
                 flash('Venue ' + venue_name + ' was successfully listed!')
                 return render_template('pages/home.html')
@@ -194,7 +195,7 @@ def setup(app):
             db.session.close()           
             if  error == True:
                 flash('Venue deletion failed')
-                abort(400)
+                abort(500)
             else:            
                 flash('Venue was successfully deleted!')
                 return "ok"
@@ -222,7 +223,8 @@ def setup(app):
                 db.session.commit()
 
             else:
-                abort(400)
+                flash('Venue edit failed')
+                abort(404)
         except:
             error = True
             db.session.rollback()
@@ -230,6 +232,7 @@ def setup(app):
         finally:
             db.session.close()           
             if  error == True:
-                abort(400)
+                flash('Venue edit failed')
+                abort(500)
             else:            
                 return redirect(url_for('show_venue', venue_id=venue_id))

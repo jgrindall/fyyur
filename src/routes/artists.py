@@ -3,7 +3,7 @@ Artists controller
 """
 
 from flask import render_template, flash, request, redirect, url_for,abort
-from src.models import Artist
+from src.models import Artist, Show
 from sqlalchemy import text
 from src.extensions import db
 from src.forms import ArtistForm
@@ -36,11 +36,11 @@ def setup(app):
 
             # search for artists with upcoming shows whose name contains the search term
             query = db.text("""
-                SELECT a.id, a.name, COUNT(*) as num_upcoming_shows
+                SELECT a.id, a.name, COUNT(s.id) as num_upcoming_shows
                 FROM "Artist" a
-                LEFT OUTER JOIN "Show" s ON a.id = s.artist_id
-                WHERE s.start_time > NOW()
-                AND a.name ILIKE :search_term
+                LEFT OUTER JOIN "Show" s
+                ON a.id = s.artist_id AND s.start_time > NOW()
+                WHERE a.name ILIKE :search_term
                 GROUP BY a.id
             """)
 
@@ -103,7 +103,7 @@ def setup(app):
                         "venue_id": row.venue_id,
                         "venue_name": row.venue_name,
                         "venue_image_link": row.venue_image_link,
-                        "start_time": row.start_time
+                        "start_time": Show.time_to_string(row.start_time)
                     }
                     if(row.start_time > now):
                         artist['upcoming_shows'].append(show)
@@ -134,7 +134,8 @@ def setup(app):
                 Artist.edit_using_form_data(artist, request.form)
                 db.session.commit()
             else:
-                abort(400)
+                flash('Failed to edit artist')
+                abort(404)
         except:
             error = True
             db.session.rollback()
@@ -142,7 +143,8 @@ def setup(app):
         finally:
             db.session.close()           
             if  error == True:
-                abort(400)
+                flash('Failed to edit artist ')
+                abort(500)
             else:            
                 return redirect(url_for('show_artist', artist_id=artist_id))
 
@@ -178,8 +180,9 @@ def setup(app):
 
         finally:
             db.session.close()           
-            if  error == True:
-                abort(400)
+            if  error:
+                flash('Failed to create artist')
+                abort(500)
             else:            
                 flash('Artist ' + artist_name + ' was successfully listed!')
                 return redirect(url_for('show_artist', artist_id=artist_id))

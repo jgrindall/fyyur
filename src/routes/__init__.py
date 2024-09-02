@@ -16,7 +16,7 @@ def init_routes(app):
     #shows
     setup_shows(app)
 
-    
+    #artists
     setup_artists(app)
 
     #errors
