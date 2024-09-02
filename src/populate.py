@@ -3,8 +3,7 @@ from src.extensions.database import db
 import json
 from datetime import datetime
 
-#default data to be added to the database
-
+#default data to be added to the database on first run
 artist0 = {
     "name": "Guns N Petals",
     "genres": [
@@ -231,8 +230,13 @@ def _add_shows():
 def populate_db():
     print("populating db...", flush=True)
 
-    _add_artists()
-    _add_venues()
-    _add_shows()
+    try:
+        _add_artists()
+        _add_venues()
+        _add_shows()
+
+    except Exception as e:
+        print("failed", flush=True)
+        db.session.rollback()
 
     print("db populated", flush=True)
