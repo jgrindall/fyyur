@@ -9,9 +9,8 @@ from src.forms import ShowForm
 
 def setup(app):
 
-    #  Shows
-    #  ----------------------------------------------------------------
-
+    
+    # view all shows
     @app.route('/shows')
     def shows():
         all_shows = Show.query.all()

@@ -3,7 +3,7 @@ Artists controller
 """
 
 from flask import render_template, flash, request, redirect, url_for,abort
-from src.models import Artist, Venue, Show
+from src.models import Artist
 from sqlalchemy import text
 from src.extensions import db
 from src.forms import ArtistForm
@@ -13,6 +13,7 @@ from datetime import datetime
 
 def setup(app):
 
+    # view all artists - id and name
     @app.route('/artists')
     def artists():
         artists = Artist.query.all()
@@ -22,6 +23,7 @@ def setup(app):
 
 
     
+    # search artists. Return count of search results and data (including num_upcoming_shows)
     @app.route('/artists/search', methods=['POST'])
     def search_artists():
         search_term = request.form.get('search_term', '').strip()
@@ -32,13 +34,14 @@ def setup(app):
             }
         else:
 
+            # search for artists with upcoming shows whose name contains the search term
             query = db.text("""
                 SELECT a.id, a.name, COUNT(*) as num_upcoming_shows
                 FROM "Artist" a
                 LEFT OUTER JOIN "Show" s ON a.id = s.artist_id
                 WHERE s.start_time > NOW()
                 AND a.name ILIKE :search_term
-                GROUP BY a.id, a.name
+                GROUP BY a.id
             """)
 
             result = db.session.execute(query, {'search_term': '%' + search_term + '%'})
@@ -60,9 +63,11 @@ def setup(app):
 
 
     
+    # view artist details
     @app.route('/artists/<int:artist_id>')
     def show_artist(artist_id):
 
+        # join Artist, Show, and Venue tables to get artist details and show details
         query = db.text("""
             SELECT a.*, s.venue_id, s.start_time, v.name as venue_name, v.image_link as venue_image_link
             FROM "Artist" a
@@ -72,8 +77,6 @@ def setup(app):
             ON v.id = s.venue_id
             WHERE a.id = :artist_id
         """)
-
-        print("run", query, flush=True)
 
         result = db.session.execute(query, {'artist_id': int(artist_id)})
         rows = result.fetchall()
@@ -92,6 +95,8 @@ def setup(app):
                 "past_shows_count": 0
             }
 
+            now = datetime.now()
+
             for row in rows:
                 if(row.venue_id != None):
                     show = {
@@ -100,7 +105,7 @@ def setup(app):
                         "venue_image_link": row.venue_image_link,
                         "start_time": row.start_time
                     }
-                    if(row.start_time > datetime.now()):
+                    if(row.start_time > now):
                         artist['upcoming_shows'].append(show)
                         artist['upcoming_shows_count'] += 1
                     else:
@@ -111,8 +116,7 @@ def setup(app):
 
     
     
-    #  Update
-    #  ----------------------------------------------------------------
+    #  edit artist GET
     @app.route('/artists/<int:artist_id>/edit', methods=['GET'])
     def edit_artist(artist_id):
         artist = Artist.query.get(artist_id)
@@ -121,7 +125,7 @@ def setup(app):
         return render_template('forms/edit_artist.html', form=form, artist=artist_json)
 
     
-    
+    # edit artist using form submission POST
     @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
     def edit_artist_submission(artist_id):        
         try:
@@ -145,14 +149,14 @@ def setup(app):
 
 
 
-    #  Create Artist
-    #  ----------------------------------------------------------------
-
+    #  Create Artist GET
     @app.route('/artists/create', methods=['GET'])
     def create_artist_form():
         form = ArtistForm()
         return render_template('forms/new_artist.html', form=form)
 
+    
+    # Create Artist POST
     @app.route('/artists/create', methods=['POST'])
     def create_artist_submission():
 
