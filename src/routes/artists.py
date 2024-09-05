@@ -168,7 +168,8 @@ def setup(app):
     
     # edit artist using form submission POST
     @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
-    def edit_artist_submission(artist_id):        
+    def edit_artist_submission(artist_id):
+        error = False
         try:
             artist = Artist.query.get(artist_id)
             if artist:
@@ -177,7 +178,8 @@ def setup(app):
             else:
                 flash('Failed to edit artist')
                 abort(404)
-        except:
+        except Exception as e:
+            print(e, flush=True)
             error = True
             db.session.rollback()
 

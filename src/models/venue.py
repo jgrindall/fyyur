@@ -47,23 +47,24 @@ class Venue(db.Model):
         venue.phone = form.get('phone', venue.phone)
         venue.image_link = form.get('image_link', venue.image_link)
         venue.facebook_link = form.get('facebook_link', venue.facebook_link)
-        venue.seeking_talent = form.get('seeking_talent', venue.seeking_talent)
+        venue.seeking_talent = form.get('seeking_talent') == "y"
         venue.seeking_description = form.get('seeking_description', venue.seeking_description)
         venue.website = form.get('website', venue.website)
-        venue.genres = json.dumps(form.get('genres', venue.genres))
+        genres = form.getlist('genres') or []
+        venue.genres = json.dumps(genres)
     
     @staticmethod
     def create_using_form_data(form):
         venue = Venue(
             name = form['name'],
-            genres = json.dumps(form.getlist('genres')),
+            genres = json.dumps(form.getlist('genres') or []),
             address = form['address'],
             city = form['city'],
             state = form['state'],
             phone = form['phone'],
             facebook_link = form.get('facebook_link', ''),
             image_link = form.get('image_link', ''),
-            seeking_talent = form.get('seeking_talent', False),
+            seeking_talent = form.get('seeking_talent') == "y",
             seeking_description = form.get('seeking_description', ''),
             website = form.get('website', '')
         )

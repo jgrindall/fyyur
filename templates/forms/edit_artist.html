@@ -3,8 +3,6 @@
 {% block content %}
   <div class="form-wrapper">
 
-    <textarea>{{ artist }}</textarea>
-
     <form class="form" method="post" action="/artists/{{artist.id}}/edit">
       <h3 class="form-heading">Edit artist <em>{{ artist.name }}</em></h3>
       <div class="form-group">

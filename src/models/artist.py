@@ -43,9 +43,10 @@ class Artist(db.Model):
         artist.image_link = form.get('image_link', artist.image_link)
         artist.facebook_link = form.get('facebook_link', artist.facebook_link)
         artist.website = form.get('website', artist.website) 
-        artist.seeking_venue = form.get('seeking_venue', artist.seeking_venue)
+        artist.seeking_venue = form.get('seeking_venue') == "y"
         artist.seeking_description = form.get('seeking_description', artist.seeking_description)
-        artist.genres = json.dumps(form.get('genres', artist.genres))
+        genres = form.getlist('genres')
+        artist.genres = json.dumps(genres or [])
 
 
     @staticmethod
@@ -55,10 +56,10 @@ class Artist(db.Model):
             city = form['city'],
             state = form['state'],
             phone = form['phone'],
-            genres = json.dumps(form.getlist('genres')),
+            genres = json.dumps(form.getlist('genres') or []),
             image_link = form.get('image_link', ''),
             facebook_link = form.get('facebook_link', ''),
-            seeking_venue = form.get('seeking_venue', False),
+            seeking_venue = form.get('seeking_venue') == "y",
             seeking_description = form.get('seeking_description', ''),
             website = form.get('website', '')
         )

@@ -237,6 +237,7 @@ def setup(app):
     
     @app.route('/venues/<venue_id>', methods=['DELETE'])
     def delete_venue(venue_id):
+        error = False
         try:
             venue = Venue.query.get(venue_id)
             db.session.delete(venue)
@@ -272,6 +273,7 @@ def setup(app):
 
     @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
     def edit_venue_submission(venue_id):
+        error = False
         try:
             venue = Venue.query.get(venue_id)
             if venue:
@@ -279,9 +281,11 @@ def setup(app):
                 db.session.commit()
 
             else:
+                print("venue not found", flush=True)
                 flash('Venue edit failed')
                 abort(404)
-        except:
+        except Exception as e:
+            print(e, flush=True)
             error = True
             db.session.rollback()
 
