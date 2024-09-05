@@ -7,7 +7,7 @@
 git clone https://github.com/jgrindall/fyyur.git
 ```
 
-2. Use Python 3.10 for the following:
+2. Use Python 3.12 for the following:
 
 3. Install dependencies:
 
