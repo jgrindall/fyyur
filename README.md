@@ -1,7 +1,11 @@
 
 ## Development Setup
 
-1. git clone 
+1. Clone the repo:
+
+```
+git clone https://github.com/jgrindall/fyyur.git
+```
 
 2. Use Python 3.10 for the following:
 
