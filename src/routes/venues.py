@@ -1,9 +1,10 @@
 
 from flask import render_template, request, flash, redirect, url_for, abort
-from src.models import Venue, Show
+from src.models import Venue, Show, Artist
 from src.extensions import db
 from src.forms import VenueForm
 import json
+from sqlalchemy import  func
 from datetime import datetime
 
 def setup(app):
@@ -13,7 +14,9 @@ def setup(app):
 
     @app.route('/venues')
     def venues():
-
+        
+        '''
+        Rewrite the following query to use SQLAlchemy ORM
         query = db.text("""
             SELECT v.id, v.name, v.state, v.city, count(s.id) as num_upcoming_shows
             FROM "Venue" v 
@@ -22,10 +25,22 @@ def setup(app):
             AND s.start_time > NOW()
             GROUP BY v.id
         """)
+        '''
 
+        query = db.session.query(
+            Venue.id,
+            Venue.name,
+            Venue.state,
+            Venue.city,
+            func.count(Show.id).label('num_upcoming_shows')
+        ).outerjoin(
+            Show, 
+            (Venue.id == Show.venue_id) & (Show.start_time > func.now())
+        ).group_by(
+            Venue.id
+        )
 
-        result = db.session.execute(query)
-        rows = result.fetchall()
+        rows = query.all()
 
         areas = {}
 
@@ -57,7 +72,9 @@ def setup(app):
     
     @app.route('/venues/search', methods=['POST'])
     def search_venues():
+        
         search_term = request.form.get('search_term', '').strip()
+
         if(search_term == ""):
             results = {
                 "count": 0,
@@ -65,6 +82,10 @@ def setup(app):
             }
         else:
 
+            search_term_wildcard = '%' + search_term + '%'
+
+            '''
+            Rewrite the following query to use SQLAlchemy ORM
             query = db.text("""
                 SELECT v.id, v.name, v.state, v.city, count(s.id) as num_upcoming_shows
                 FROM "Venue" v 
@@ -74,10 +95,25 @@ def setup(app):
                 WHERE v.name ILIKE :search_term
                 GROUP BY v.id
             """)
+            '''
 
-            result = db.session.execute(query, {'search_term': '%' + search_term + '%'})
-            rows = result.fetchall()
+            query = db.session.query(
+                Venue.id,
+                Venue.name,
+                Venue.state,
+                Venue.city,
+                func.count(Show.id).label('num_upcoming_shows')
+            ).outerjoin(
+                Show, 
+                (Venue.id == Show.venue_id) & (Show.start_time > func.now())
+            ).filter(
+                Venue.name.ilike(search_term_wildcard)
+            ).group_by(
+                Venue.id
+            )
 
+            rows = query.all()
+            
             def to_dict(row):
                 return {
                     "id": row.id,
@@ -95,6 +131,10 @@ def setup(app):
     @app.route('/venues/<int:venue_id>')
     def show_venue(venue_id):
 
+        '''
+
+        Rewrite the following query to use SQLAlchemy ORM
+
         query = db.text("""
             SELECT v.*, s.artist_id, s.start_time, a.name as artist_name, a.image_link as artist_image_link
             FROM "Venue" v 
@@ -104,10 +144,26 @@ def setup(app):
             ON a.id=s.artist_id
             WHERE v.id = :venue_id
         """)
+        '''
+        
+        query = db.session.query(
+            *Venue.__table__.columns, 
+            Show.artist_id,
+            Show.start_time,
+            Artist.name.label('artist_name'),
+            Artist.image_link.label('artist_image_link'),
+        ).outerjoin(
+            Show, 
+            (Venue.id == Show.venue_id)
+        ).outerjoin(
+            Artist, 
+            Artist.id == Show.artist_id
+        ).filter(
+            Venue.id == venue_id
+        )
 
-        result = db.session.execute(query, {'venue_id': venue_id})
-        rows = result.fetchall()
-
+        rows = query.all()
+        
         if len(rows) == 0:
             abort(404)
         else:

@@ -2,9 +2,9 @@
 Artists controller
 """
 
-from flask import render_template, flash, request, redirect, url_for,abort
-from src.models import Artist, Show
-from sqlalchemy import text
+from flask import render_template, flash, request, redirect, url_for, abort
+from src.models import Artist, Show, Venue
+from sqlalchemy import  func
 from src.extensions import db
 from src.forms import ArtistForm
 import json
@@ -26,7 +26,9 @@ def setup(app):
     # search artists. Return count of search results and data (including num_upcoming_shows)
     @app.route('/artists/search', methods=['POST'])
     def search_artists():
+        
         search_term = request.form.get('search_term', '').strip()
+
         if(search_term == ""):
             results = {
                 "count": 0,
@@ -34,7 +36,12 @@ def setup(app):
             }
         else:
 
+            search_term_wildcard = '%' + search_term + '%'
+
             # search for artists with upcoming shows whose name contains the search term
+            
+            '''
+            Raw SQL, replaced with SQLAlchemy ORM query
             query = db.text("""
                 SELECT a.id, a.name, COUNT(s.id) as num_upcoming_shows
                 FROM "Artist" a
@@ -46,6 +53,22 @@ def setup(app):
 
             result = db.session.execute(query, {'search_term': '%' + search_term + '%'})
             rows = result.fetchall()
+            '''
+
+            query = db.session.query(
+                Artist.id, 
+                Artist.name, 
+                func.count(Show.id).label('num_upcoming_shows')
+            ).outerjoin(
+                Show, 
+                (Artist.id == Show.artist_id) & (Show.start_time > func.now())
+            ).filter(
+                Artist.name.ilike(search_term_wildcard)
+            ).group_by(
+                Artist.id
+            )
+
+            rows = query.all()
 
             def to_dict(row):
                 return {
@@ -68,6 +91,8 @@ def setup(app):
     def show_artist(artist_id):
 
         # join Artist, Show, and Venue tables to get artist details and show details
+        '''
+        Raw SQL, replaced with SQLAlchemy ORM query
         query = db.text("""
             SELECT a.*, s.venue_id, s.start_time, v.name as venue_name, v.image_link as venue_image_link
             FROM "Artist" a
@@ -77,9 +102,25 @@ def setup(app):
             ON v.id = s.venue_id
             WHERE a.id = :artist_id
         """)
+        '''
+        
+        query = db.session.query(
+            *Artist.__table__.columns, 
+            Show.venue_id,
+            Show.start_time,
+            Venue.name.label('venue_name'),
+            Venue.image_link.label('venue_image_link'),
+        ).outerjoin(
+            Show, 
+            (Artist.id == Show.artist_id)
+        ).outerjoin(
+            Venue, 
+            Venue.id == Show.venue_id
+        ).filter(
+            Artist.id == artist_id
+        )
 
-        result = db.session.execute(query, {'artist_id': int(artist_id)})
-        rows = result.fetchall()
+        rows = query.all()
 
         if len(rows) == 0:
             abort(404)
