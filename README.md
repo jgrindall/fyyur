@@ -39,6 +39,10 @@ POSTGRES_PWD=<this is my password>
 ```
 
 
+See also the walkthrough.mp4 in the root folder for a video showing a fresh install and all steps.
+
+
+
 
 
 
