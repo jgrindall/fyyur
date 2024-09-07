@@ -3,7 +3,7 @@ from flask import render_template, request, flash, redirect, url_for, abort
 from src.models import Venue, Show, Artist
 from src.extensions import db
 from src.forms import VenueForm
-import json
+import traceback
 from sqlalchemy import  func
 from datetime import datetime
 
@@ -171,7 +171,6 @@ def setup(app):
 
             venue = {
                 **(row0._asdict()),
-                "genres": (json.loads(row0.genres) if row0.genres else []),
                 "upcoming_shows": [],
                 "past_shows": [],
                 "upcoming_shows_count": 0,
@@ -209,31 +208,37 @@ def setup(app):
     @app.route('/venues/create', methods=['POST'])
     def create_venue_submission():
 
-        error = False
+        statusCode = 200
         venue_name = None
 
         try:
-            venue = Venue.create_using_form_data(request.form)
-            db.session.add(venue)
-            db.session.commit()
-            venue_name = venue.name
-            
+            form = VenueForm(request.form, meta={"csrf": False})
+            if(form.validate()):
+                venue = Venue.create_using_form_data(form)
+                db.session.add(venue)
+                db.session.commit()
+                venue_name = venue.name
+            else:
+                flash('Invalid venue data ' + str(form.errors))
+                statusCode = 400
         except Exception as e:
-            print(e)
-            error = True
+            print(e, flush=True)
+            print(traceback.format_exc(), flush=True)
+            statusCode = 500
+            flash('Error creating venue ' + str(e))
             db.session.rollback()
 
         finally:
-            db.session.close()           
-            if  error == True:
-                flash('Failed to create venue')
-                abort(500)
-            else:            
+            db.session.close()
+            if  statusCode != 200:
+                abort(statusCode)
+            else:
                 flash('Venue ' + venue_name + ' was successfully listed!')
                 return render_template('pages/home.html')
 
-    
-    
+
+
+
     
     @app.route('/venues/<venue_id>', methods=['DELETE'])
     def delete_venue(venue_id):
@@ -273,26 +278,30 @@ def setup(app):
 
     @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
     def edit_venue_submission(venue_id):
-        error = False
+        statusCode = 200
         try:
             venue = Venue.query.get(venue_id)
             if venue:
-                Venue.edit_using_form_data(venue, request.form)
-                db.session.commit()
-
+                form = VenueForm(request.form, meta={"csrf": False})
+                if form.validate():
+                    Venue.edit_using_form_data(venue, form)
+                    db.session.add(venue)
+                    db.session.commit()
+                else:
+                    flash('Invalid venue data ' + str(form.errors))
+                    statusCode = 400 
             else:
-                print("venue not found", flush=True)
-                flash('Venue edit failed')
-                abort(404)
+                flash('Venue not found')
+                statusCode = 404
         except Exception as e:
             print(e, flush=True)
-            error = True
+            flash('Error editing venue ' + str(e))
+            statusCode = 500
             db.session.rollback()
 
         finally:
             db.session.close()           
-            if  error == True:
-                flash('Venue edit failed')
-                abort(500)
+            if  statusCode != 200:
+                abort(statusCode)
             else:            
                 return redirect(url_for('show_venue', venue_id=venue_id))

@@ -2,7 +2,7 @@
 Shows controller
 """
 
-from flask import render_template, request, flash
+from flask import render_template, request, flash, abort
 from src.models import Show
 from src.extensions import db
 from src.forms import ShowForm
@@ -41,18 +41,32 @@ def setup(app):
 
     @app.route('/shows/create', methods=['POST'])
     def create_show_submission():
+
+        statusCode = 200
+        show_id = None
+
         try:
-            show = Show.create_using_form_data(request.form)
-            print("add show", show, flush=True)
-            db.session.add(show)
-            db.session.commit()
-            flash('Show was successfully listed!')
+            form = ShowForm(request.form, meta={"csrf": False})
+            if(form.validate()):
+                show = Show.create_using_form_data(form)
+                db.session.add(show)
+                db.session.commit()
+                show_id = show.id
+            else:
+                flash('Invalid show ' + str(form.errors))
+                statusCode = 400
             
         except Exception as e:
             db.session.rollback()
             print(e, flush=True)
-            flash('An error occurred. Show could not be listed.')
+            flash('Error creating show ' + str(e))
+            statusCode = 500
             
         finally:
             db.session.close()
-            return render_template('pages/home.html')
+            if  statusCode != 200:
+                abort(statusCode)
+            else:
+                flash('Show id ' + str(show_id) + ' was successfully listed!')
+                return render_template('pages/home.html')
+

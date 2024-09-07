@@ -1,7 +1,5 @@
 from src.models import Artist, Venue, Show
 from src.extensions.database import db
-import json
-from datetime import datetime
 
 #default data to be added to the database on first run
 artist0 = {
@@ -121,7 +119,7 @@ shows = [
 def _make_artist(data):
     return Artist(
        name = data['name'],
-       genres = json.dumps(data['genres']),
+       genres = data['genres'],
        city = data['city'],
        state = data['state'],
        phone = data['phone'],
@@ -135,7 +133,7 @@ def _make_artist(data):
 def _make_venue(data):
     return Venue(
        name = data['name'],
-       genres = json.dumps(data['genres']),
+       genres = data['genres'],
        address = data['address'],
        city = data['city'],
        state = data['state'],

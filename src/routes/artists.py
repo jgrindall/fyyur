@@ -7,7 +7,6 @@ from src.models import Artist, Show, Venue
 from sqlalchemy import  func
 from src.extensions import db
 from src.forms import ArtistForm
-import json
 from datetime import datetime
 
 
@@ -39,22 +38,7 @@ def setup(app):
             search_term_wildcard = '%' + search_term + '%'
 
             # search for artists with upcoming shows whose name contains the search term
-            
-            '''
-            Raw SQL, replaced with SQLAlchemy ORM query
-            query = db.text("""
-                SELECT a.id, a.name, COUNT(s.id) as num_upcoming_shows
-                FROM "Artist" a
-                LEFT OUTER JOIN "Show" s
-                ON a.id = s.artist_id AND s.start_time > NOW()
-                WHERE a.name ILIKE :search_term
-                GROUP BY a.id
-            """)
-
-            result = db.session.execute(query, {'search_term': '%' + search_term + '%'})
-            rows = result.fetchall()
-            '''
-
+           
             query = db.session.query(
                 Artist.id, 
                 Artist.name, 
@@ -91,18 +75,6 @@ def setup(app):
     def show_artist(artist_id):
 
         # join Artist, Show, and Venue tables to get artist details and show details
-        '''
-        Raw SQL, replaced with SQLAlchemy ORM query
-        query = db.text("""
-            SELECT a.*, s.venue_id, s.start_time, v.name as venue_name, v.image_link as venue_image_link
-            FROM "Artist" a
-            LEFT OUTER JOIN "Show" s
-            ON a.id = s.artist_id
-            LEFT OUTER JOIN "Venue" v
-            ON v.id = s.venue_id
-            WHERE a.id = :artist_id
-        """)
-        '''
         
         query = db.session.query(
             *Artist.__table__.columns, 
@@ -127,9 +99,10 @@ def setup(app):
         else:
             row0 = rows[0]
 
+            print(row0, flush=True)
+
             artist = {
                 **(row0._asdict()),
-                "genres": (json.loads(row0.genres) if row0.genres else []),
                 "upcoming_shows": [],
                 "past_shows": [],
                 "upcoming_shows_count": 0,
@@ -169,25 +142,30 @@ def setup(app):
     # edit artist using form submission POST
     @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
     def edit_artist_submission(artist_id):
-        error = False
+        statusCode = 200
         try:
             artist = Artist.query.get(artist_id)
             if artist:
-                Artist.edit_using_form_data(artist, request.form)
-                db.session.commit()
+                form = ArtistForm(request.form, meta={"csrf": False})
+                if form.validate():
+                    Artist.edit_using_form_data(artist, form)
+                    db.session.commit()
+                else:
+                    flash('Invalid form data ' + str(form.errors))
+                    statusCode = 400
             else:
-                flash('Failed to edit artist')
-                abort(404)
+                flash('Artist not found')
+                statusCode = 404
         except Exception as e:
             print(e, flush=True)
-            error = True
+            statusCode = 500
+            flash('Error editing artist ' + str(e))
             db.session.rollback()
 
         finally:
             db.session.close()           
-            if  error == True:
-                flash('Failed to edit artist ')
-                abort(500)
+            if  statusCode != 200:
+                abort(statusCode)
             else:            
                 return redirect(url_for('show_artist', artist_id=artist_id))
 
@@ -207,25 +185,30 @@ def setup(app):
 
         artist_id = None
         artist_name = None
-        error = False
+        statusCode = 200
 
         try:
-            artist = Artist.create_using_form_data(request.form)
-            db.session.add(artist)
-            db.session.commit()
-            artist_id = artist.id
-            artist_name = artist.name
+            form = ArtistForm(request.form, meta={"csrf": False})
+            if form.validate():
+                artist = Artist.create_using_form_data(form)
+                db.session.add(artist)
+                db.session.commit()
+                artist_id = artist.id
+                artist_name = artist.name
+            else:
+                flash('Invalid form data ' + str(form.errors))
+                statusCode = 400
             
         except Exception as e:
-            print(e)
-            error = True
+            print(e, flush=True)
+            statusCode = 500
+            flash('Error creating artist ' + str(e))
             db.session.rollback()
 
         finally:
             db.session.close()           
-            if  error:
-                flash('Failed to create artist')
-                abort(500)
+            if  statusCode != 200:
+                abort(statusCode)
             else:            
                 flash('Artist ' + artist_name + ' was successfully listed!')
                 return redirect(url_for('show_artist', artist_id=artist_id))

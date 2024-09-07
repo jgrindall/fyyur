@@ -1,5 +1,5 @@
 from ..extensions import db
-import json
+from sqlalchemy.dialects.postgresql import ARRAY
 
 class Venue(db.Model):
     __tablename__ = 'Venue'
@@ -12,7 +12,7 @@ class Venue(db.Model):
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
+    genres = db.Column(ARRAY(db.String), nullable=False)
 
     seeking_talent = db.Column(db.Boolean, default=False, nullable=True)
     seeking_description = db.Column(db.String(500), nullable=True)
@@ -33,39 +33,39 @@ class Venue(db.Model):
             "seeking_talent": self.seeking_talent or False,
             "seeking_description": self.seeking_description or "",
             "website": self.website or "",
-
-            # json
-            "genres": json.loads(self.genres) if self.genres else []
+            "genres":self.genres
         }
     
     @staticmethod
     def edit_using_form_data(venue, form):
-        venue.name = form.get('name', venue.name)
-        venue.city = form.get('city', venue.city)
-        venue.state = form.get('state', venue.state)
-        venue.address = form.get('address', venue.address)
-        venue.phone = form.get('phone', venue.phone)
-        venue.image_link = form.get('image_link', venue.image_link)
-        venue.facebook_link = form.get('facebook_link', venue.facebook_link)
-        venue.seeking_talent = form.get('seeking_talent') == "y"
-        venue.seeking_description = form.get('seeking_description', venue.seeking_description)
-        venue.website = form.get('website', venue.website)
-        genres = form.getlist('genres') or []
-        venue.genres = json.dumps(genres)
+        venue.name = form.data['name']
+        venue.city = form.data['city']
+        venue.state = form.data['state']
+        venue.address = form.data['address']
+        venue.phone = form.data['phone']
+        venue.image_link = form.data['image_link']
+        venue.facebook_link = form.data['facebook_link']
+        venue.seeking_talent = form.data['seeking_talent']
+        venue.seeking_description = form.data['seeking_description']
+        venue.website = form.data['website']
+        venue.genres = form.data["genres"]
     
     @staticmethod
     def create_using_form_data(form):
+
+        print("1", form.data, flush=True)
+
         venue = Venue(
-            name = form['name'],
-            genres = json.dumps(form.getlist('genres') or []),
-            address = form['address'],
-            city = form['city'],
-            state = form['state'],
-            phone = form['phone'],
-            facebook_link = form.get('facebook_link', ''),
-            image_link = form.get('image_link', ''),
-            seeking_talent = form.get('seeking_talent') == "y",
-            seeking_description = form.get('seeking_description', ''),
-            website = form.get('website', '')
+            name = form.data["name"],
+            genres = form.data["genres"],
+            address = form.data["address"],
+            city = form.data["city"],
+            state = form.data["state"],
+            phone = form.data["phone"],
+            facebook_link = form.data["facebook_link"],
+            image_link = form.data["image_link"],
+            seeking_talent = form.data["seeking_talent"],
+            seeking_description = form.data["seeking_description"],
+            website = form.data["website"]
         )
         return venue

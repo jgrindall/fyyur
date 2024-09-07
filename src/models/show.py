@@ -17,15 +17,14 @@ class Show(db.Model):
 
     @staticmethod
     def create_using_form_data(form):
-        venue_id = int(form.get('venue_id'))
-        artist_id = int(form.get('artist_id'))
-        start_time = form.get('start_time')
+        venue_id = form.data['venue_id']
+        artist_id = form.data['artist_id']
+        start_time = form.data['start_time']
         
         show = Show(
             venue_id = venue_id,
             artist_id = artist_id,
-            # the client uses a different time format
-            start_time = datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S')
+            start_time = start_time
         )
         return show
 
