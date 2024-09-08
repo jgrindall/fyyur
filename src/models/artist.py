@@ -6,16 +6,16 @@ class Artist(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String, unique=True, nullable=False)
-    city = db.Column(db.String(120), nullable=False)
-    state = db.Column(db.String(120), nullable=False)
-    phone = db.Column(db.String(120))
+    city = db.Column(db.String(128), nullable=False)
+    state = db.Column(db.String(8), nullable=False)
+    phone = db.Column(db.String(32))
     genres = db.Column(ARRAY(db.String), nullable=False)
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    website = db.Column(db.String(500), nullable=True)
+    image_link = db.Column(db.String(512))
+    facebook_link = db.Column(db.String(512))
+    website = db.Column(db.String(512), nullable=True)
 
     seeking_venue = db.Column(db.Boolean, default=False, nullable=True)
-    seeking_description = db.Column(db.String(500), nullable=True)
+    seeking_description = db.Column(db.String(512), nullable=True)
 
     def to_dict(self):
         return {

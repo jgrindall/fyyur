@@ -166,7 +166,8 @@ def setup(app):
             db.session.close()           
             if  statusCode != 200:
                 abort(statusCode)
-            else:            
+            else:
+                flash('Artist successfully edited')
                 return redirect(url_for('show_artist', artist_id=artist_id))
 
 
